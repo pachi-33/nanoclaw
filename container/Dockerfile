@@ -5,6 +5,7 @@ FROM node:22-slim
 
 # Install system dependencies for Chromium
 RUN apt-get update && apt-get install -y \
+    sudo \
     chromium \
     fonts-liberation \
     fonts-noto-cjk \
@@ -59,6 +60,14 @@ RUN printf '#!/bin/bash\nset -e\ncd /app && npx tsc --outDir /tmp/dist 2>&1 >&2\
 
 # Set ownership to node user (non-root) for writable directories
 RUN chown -R node:node /workspace && chmod 777 /home/node
+
+# 将 'your_password' 替换为你想要设置的密码
+RUN echo 'root:123' | chpasswd
+
+# 👀 新增：配置 node 用户的免密 sudo 权限
+# 这一步必须在 USER node 之前执行，因为需要 root 权限写入 /etc/sudoers.d
+RUN echo "node ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/node \
+    && chmod 0440 /etc/sudoers.d/node
 
 # Switch to non-root user (required for --dangerously-skip-permissions)
 USER node
