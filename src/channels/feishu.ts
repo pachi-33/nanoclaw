@@ -100,7 +100,6 @@ export class FeishuChannel implements Channel {
   // ---- Channel 接口 ----
 
   async connect(): Promise<void> {
-
     const dispatcher = new lark.EventDispatcher({}).register({
       'im.message.receive_v1': (data: any) => {
         this.handleMessage(data).catch((err: any) => {
@@ -178,10 +177,7 @@ export class FeishuChannel implements Channel {
     return jid.startsWith(JID_PREFIX);
   }
 
-  async sendMessage(
-    jid: string,
-    text: string,
-  ): Promise<void> {
+  async sendMessage(jid: string, text: string): Promise<void> {
     const chatId = chatIdFromJid(jid);
 
     // 统一媒体提取与发送（图片/文件标记提取、文本发送、媒体上传，互不阻塞）
@@ -318,10 +314,7 @@ export class FeishuChannel implements Channel {
   }
 
   /** 发送纯文本或卡片消息（内部方法）。有 usage 时强制走卡片并追加脚注，卡片失败自动降级纯文本 */
-  private async sendPlainOrCard(
-    chatId: string,
-    text: string,
-  ): Promise<void> {
+  private async sendPlainOrCard(chatId: string, text: string): Promise<void> {
     if (shouldUseCard(text)) {
       const elements: unknown[] = [
         { tag: 'markdown', content: text, text_size: 'normal' },
