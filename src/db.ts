@@ -14,6 +14,15 @@ import {
 
 let db: Database.Database;
 
+/** 按消息 ID 查询发送者名称和内容 */
+export function getMessageById(
+  messageId: string,
+): { sender_name: string; content: string } | undefined {
+  return db
+    .prepare('SELECT sender_name, content FROM messages WHERE id = ?')
+    .get(messageId) as { sender_name: string; content: string } | undefined;
+}
+
 function createSchema(database: Database.Database): void {
   database.exec(`
     CREATE TABLE IF NOT EXISTS chats (
