@@ -1,6 +1,6 @@
 ---
 name: agent-browser
-description: Browse the web for any task — research topics, read articles, interact with web apps, fill forms, take screenshots, extract data, and test web pages. Use whenever a browser would be useful, not just when the user explicitly asks.
+description: Browse the web for any task — research topics, read articles, interact with web apps, fill forms, take screenshots, extract data, and test web pages. Use whenever a browser would be useful, not just when the user explicitly asks. Includes anti-fingerprint disguise for accessing sites that block headless browsers.
 allowed-tools: Bash(agent-browser:*)
 ---
 
@@ -157,3 +157,86 @@ agent-browser get text @e1  # Get product title
 agent-browser get attr @e2 href  # Get link URL
 agent-browser screenshot products.png
 ```
+
+## Anti-Fingerprint Disguise
+
+Many websites (Zhihu, Baidu, Xiaohongshu, etc.) detect and block headless browsers. **Always apply anti-fingerprint config before accessing such sites.**
+
+### Quick setup (environment variables)
+
+```bash
+# Disguise as a normal Windows Chrome browser
+export AGENT_BROWSER_USER_AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+export AGENT_BROWSER_ARGS="--disable-blink-features=AutomationControlled,--lang=zh-CN"
+export AGENT_BROWSER_COLOR_SCHEME="light"
+export AGENT_BROWSER_PROXY_BYPASS="localhost,127.0.0.1"
+export NO_PROXY="localhost,127.0.0.1"
+export no_proxy="localhost,127.0.0.1"
+
+# Now use agent-browser normally
+agent-browser open "https://www.xiaohongshu.com"
+```
+
+### Config file approach
+
+Create `agent-browser.json`:
+
+```json
+{
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+  "colorScheme": "light",
+  "proxyBypass": "localhost,127.0.0.1",
+  "args": "--disable-blink-features=AutomationControlled,--lang=zh-CN"
+}
+```
+
+```bash
+agent-browser --config ./agent-browser.json open "https://example.com"
+```
+
+### Key parameters
+
+| Parameter | Purpose |
+|-----------|---------|
+| `AGENT_BROWSER_USER_AGENT` | Remove "HeadlessChrome" marker, disguise as normal Chrome |
+| `--disable-blink-features=AutomationControlled` | Make `navigator.webdriver` return `false` |
+| `--lang=zh-CN` | Set browser language for Chinese sites |
+| `AGENT_BROWSER_COLOR_SCHEME` | Simulate real user theme preference |
+| `NO_PROXY` / `AGENT_BROWSER_PROXY_BYPASS` | Bypass proxy for localhost CDP connections |
+
+### When to use anti-fingerprint
+
+- Accessing Chinese platforms (知乎, 小红书, 百度, etc.)
+- Any site that triggers CAPTCHA or "security verification" on normal access
+- When `agent-browser snapshot` returns unexpected verification pages instead of real content
+
+### Verify disguise effectiveness
+
+```bash
+agent-browser eval "JSON.stringify({
+  userAgent: navigator.userAgent,
+  webdriver: navigator.webdriver,
+  platform: navigator.platform,
+  languages: navigator.languages,
+  hardwareConcurrency: navigator.hardwareConcurrency,
+  deviceMemory: navigator.deviceMemory
+})"
+```
+
+Expected: `webdriver` should be `false`, `userAgent` should contain no "HeadlessChrome".
+
+### Advanced: connect to real browser (most reliable)
+
+```bash
+# On macOS host: launch Chrome with remote debugging
+open -a "Google Chrome" --args --remote-debugging-port=9222
+
+# Inside container: connect to host Chrome
+agent-browser connect host.docker.internal:9222
+```
+
+### Known limitations
+
+- `navigator.platform` still returns `Linux x86_64` — some sites may detect UA/platform mismatch
+- WebGL/Canvas fingerprints may still reveal headless mode
+- Overly fast or mechanical interaction patterns can trigger behavioral analysis
