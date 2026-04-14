@@ -1,7 +1,7 @@
 #!/bin/bash
 # Self-Improvement Activator Hook
-# Triggers on UserPromptSubmit to remind Claude about learning capture
-# Keep output minimal (~50-100 tokens) to minimize overhead
+# UserPromptSubmit hook — stdout is added as context for Claude.
+# Keep output minimal (~50-100 tokens) to minimize overhead.
 
 set -e
 
