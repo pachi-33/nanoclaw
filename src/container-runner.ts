@@ -259,6 +259,10 @@ async function buildContainerArgs(
     // process_vm_readv) that Docker's default profile blocks.
     '--security-opt',
     'seccomp=unconfined',
+    // Chromium uses /dev/shm heavily for rendering — Docker's default 64MB is
+    // too small and causes the OOM killer to SIGKILL the browser process.
+    '--shm-size',
+    '512m',
   ];
 
   // Pass host timezone so container's local time matches the user's
