@@ -7,6 +7,8 @@ import fs from 'fs';
 import path from 'path';
 
 import {
+  ANTHROPIC_BASE_URL,
+  ANTHROPIC_MODEL,
   CONTAINER_IMAGE,
   CONTAINER_MAX_OUTPUT_SIZE,
   CONTAINER_TIMEOUT,
@@ -247,10 +249,29 @@ async function buildContainerArgs(
   containerName: string,
   agentIdentifier?: string,
 ): Promise<string[]> {
-  const args: string[] = ['run', '-i', '--rm', '--name', containerName];
+  const args: string[] = [
+    'run',
+    '-i',
+    '--rm',
+    '--name',
+    containerName,
+    // Relax seccomp to allow syscalls needed by some build tools (e.g. clone3,
+    // process_vm_readv) that Docker's default profile blocks.
+    '--security-opt',
+    'seccomp=unconfined',
+  ];
 
   // Pass host timezone so container's local time matches the user's
   args.push('-e', `TZ=${TIMEZONE}`);
+
+  // Pass Anthropic endpoint config so the SDK calls the right API.
+  // These are configuration, not secrets — OneCLI injects the actual key.
+  if (ANTHROPIC_BASE_URL) {
+    args.push('-e', `ANTHROPIC_BASE_URL=${ANTHROPIC_BASE_URL}`);
+  }
+  if (ANTHROPIC_MODEL) {
+    args.push('-e', `ANTHROPIC_MODEL=${ANTHROPIC_MODEL}`);
+  }
 
   // OneCLI gateway handles credential injection — containers never see real secrets.
   // The gateway intercepts HTTPS traffic and injects API keys or OAuth tokens.

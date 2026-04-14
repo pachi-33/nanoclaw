@@ -191,6 +191,29 @@ export class FeishuChannel implements Channel {
       const relativePath = inputPath.replace(/^\/workspace\/group\//, '');
       return path.join(resolveGroupFolderPath(groupFolder), relativePath);
     }
+    if (inputPath.startsWith('/workspace/extra/')) {
+      const relativePath = inputPath.replace(/^\/workspace\/extra\//, '');
+      const groups = this.opts.registeredGroups();
+      for (const group of Object.values(groups)) {
+        const mounts = group.containerConfig?.additionalMounts;
+        if (!mounts) continue;
+        for (const mount of mounts) {
+          const containerName =
+            mount.containerPath || path.basename(mount.hostPath);
+          if (
+            relativePath === containerName ||
+            relativePath.startsWith(containerName + '/')
+          ) {
+            const hostBase = mount.hostPath.replace(
+              /^~/,
+              process.env.HOME || '',
+            );
+            const subPath = relativePath.slice(containerName.length);
+            return path.join(hostBase, subPath);
+          }
+        }
+      }
+    }
     // 正则只匹配以 / 开头的路径，此处必为绝对路径
     return inputPath;
   }
